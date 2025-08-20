@@ -3,7 +3,6 @@
 import { useRef } from 'react';
 import Copy from '@/components/Copy';
 import Nav from '@/components/Nav'; // or Menu, whatever you named it
-import Link from 'next/link';
 
 export default function Page() {
   const containerRef = useRef(null);
@@ -14,8 +13,7 @@ export default function Page() {
       <div className="container" ref={containerRef}>
         <div className="page-header">
           <Copy delay={0.3}>
-            <h1>Timeless Form</h1>
-            <Link href="/about">test</Link>
+            <h1>Get In Touch</h1>
           </Copy>
         </div>
       </div>

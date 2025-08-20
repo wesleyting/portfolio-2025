@@ -1,26 +1,393 @@
-@import "tailwindcss";
-
+/* ------------------------------------------------------------------
+   TOKENS
+------------------------------------------------------------------ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* brand palette */
+  --color-bg: #EBEBEB;
+  --color-fg: #1A1A1A;
+  --color-white: #FFFFFF;
+
+  /* menu theme */
+  --menu-bg: #0f0f0f;
+  --menu-fg: var(--color-white);
+  --menu-fg-secondary: hsla(0, 0%, 100%, 0.6);
+  --hamburger-icon-border: rgba(255, 255, 255, 0.1);
+
+  /* type scale */
+  --fz-hero: clamp(2rem, 8vw, 12rem);
+  --fz-link: 0.9rem;
+  --fz-menu-link: clamp(2rem, 6vw, 3.5rem);
+  --fz-menu-tag: 1.25rem;
+
+  /* spacing */
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 2rem;
+  --space-4: 3rem;
+
+  /* effects */
+  --underline-thickness: 6px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* optional: automatic dark menu theme hook if you ever need it
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --color-bg: #0f0f0f;
+    --color-fg: #f2f2f2;
+  }
+}
+*/
+
+/* ------------------------------------------------------------------
+   BASE
+------------------------------------------------------------------ */
+@layer base {
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&display=swap');
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    font-family: "Inter", sans-serif;
+    color: var(--color-fg);
+    background: var(--color-bg);
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  a {
+    text-decoration: none;
+    color: var(--color-fg);
+    font-weight: 500;
+  }
+
+  h1 {
+    text-transform: uppercase;
+    color: var(--color-fg);
+    font-size: var(--fz-hero);
+    font-weight: 800;
+    line-height: 1;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ------------------------------------------------------------------
+   LAYOUT
+------------------------------------------------------------------ */
+@layer components {
+  /* top nav bar that sits above everything */
+  nav {
+    position: fixed;
+    inset: 0 auto auto 0;
+    width: 100vw;
+    padding: var(--space-3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10; /* sits below overlays that use 1000+ */
+    pointer-events: none; /* menu bar handles interactions */
+  }
+
+  .nav-logo a {
+    pointer-events: auto;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-fg);
+  }
+
+  .nav-links {
+    pointer-events: auto;
+    display: flex;
+    gap: var(--space-3);
+  }
+
+  .container {
+    position: relative;
+    width: 100%;
+    min-height: 100svh;
+    /* background now driven by token */
+    background: var(--color-bg);
+  }
+
+  .page-header {
+    width: 100vw;
+    height: 100svh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--space-3);
+  }
+
+  .archive {
+    width: min(30%, 640px);
+    margin: 0 auto;
+    padding: 15rem var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .archive img {
+    aspect-ratio: 5 / 7;
+  }
+
+  /* page transition overlay blocks */
+  .transition-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100svh;
+    display: flex;
+    pointer-events: none;
+    z-index: 1000;
+  }
+  .block {
+    flex: 1;
+    background: #222; /* can be tokenized if you want */
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  /* splash logo overlay */
+  .logo-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100svh;
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #222; /* or var(--menu-bg) if you want consistency */
+    pointer-events: none;
+    opacity: 0;
+  }
+  .logo-container {
+    width: 200px;
+    height: 200px;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+  }
+  .char {
+    position: relative;
+    display: inline-block;
+    will-change: transform;
+  }
+}
+
+/* ------------------------------------------------------------------
+   MENU SYSTEM
+------------------------------------------------------------------ */
+@layer components {
+  /* clickable bar that remains interactive */
+  .menu-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    padding: var(--space-3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: all;
+    color: var(--menu-fg-secondary);
+    z-index: 100; /* above nav but below overlays */
+  }
+
+  .menu-logo {
+    width: 64px;
+  }
+
+  .menu-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+  }
+  .menu-toggle-label {
+    overflow: hidden;
+  }
+  .menu-toggle-label p {
+    position: relative;
+    transform: translateY(0%);
+    will-change: transform;
+  }
+
+  .menu-hamburger-icon {
+    position: relative;
+    width: 3rem;
+    height: 3rem;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--hamburger-icon-border);
+    border-radius: 50%;
+  }
+  .menu-hamburger-icon span {
+    position: absolute;
+    width: 15px;
+    height: 1.25px;
+    background: var(--menu-fg);
+    transition: all 0.75s cubic-bezier(0.87, 0, 0.13, 1);
+    transform-origin: center;
+    will-change: transform;
+  }
+  .menu-hamburger-icon span:nth-child(1) { transform: translateY(-3px); }
+  .menu-hamburger-icon span:nth-child(2) { transform: translateY(3px); }
+  .menu-hamburger-icon.active span:nth-child(1) { transform: translateY(0) rotate(45deg) scaleX(1.05); }
+  .menu-hamburger-icon.active span:nth-child(2) { transform: translateY(0) rotate(-45deg) scaleX(1.05); }
+
+  .menu-overlay,
+  .menu-overlay-content {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100svh;
+    color: var(--menu-fg);
+    overflow: hidden;
+    z-index: 90;
+  }
+  .menu-overlay {
+    background: var(--menu-bg);
+    clip-path: polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%);
+    will-change: clip-path;
+  }
+  .menu-overlay-content {
+    display: flex;
+    transform: translateY(-50%);
+    will-change: transform;
+    pointer-events: all;
+  }
+
+  .menu-media-wrapper {
+    flex: 2;
+    opacity: 0;
+    will-change: opacity;
+  }
+  .menu-media-wrapper img { opacity: 0.8; }
+
+  .menu-content-wrapper {
+    flex: 3;
+    position: relative;
+    display: flex;
+  }
+  .menu-content-main {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .menu-footer { margin: 0 auto; }
+
+  .menu-content-main,
+  .menu-footer {
+    width: 75%;
+    padding: var(--space-3);
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-3);
+  }
+
+  .menu-col { display: flex; flex-direction: column; gap: var(--space-1); }
+  .menu-col:nth-child(1) { flex: 3; }
+  .menu-col:nth-child(2) { flex: 2; }
+
+  .menu-link a { font-size: var(--fz-menu-link); font-weight: 500; line-height: 1.2; }
+  .menu-tag a { color: var(--menu-fg); font-size: var(--fz-menu-tag); }
+  .menu-footer p { color: var(--menu-fg-secondary); }
+
+  .line { position: relative; will-change: transform; }
+}
+
+/* ------------------------------------------------------------------
+   MENU UNDERLINE LOGIC
+------------------------------------------------------------------ */
+@layer components {
+  .menu-link {
+    position: relative;
+    width: max-content;
+    contain: content;
+  }
+
+  .menu-link a,
+  .menu-link .active-link {
+    position: relative;
+    display: inline-block;
+    font-size: var(--fz-menu-link);
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--menu-fg);
+  }
+
+  .menu-link a::after,
+  .menu-link .active-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 100%;
+    height: var(--underline-thickness);
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 300ms cubic-bezier(0.87, 0, 0.13, 1);
+    will-change: transform;
+  }
+
+  .menu-link .active-link::after { transform: scaleX(1); }
+
+  /* only hide active underline when another link is hovered */
+  .menu-content-main:has(.menu-link a:hover) .menu-link .active-link::after {
+    transform: scaleX(0);
+  }
+
+  /* show underline for hovered element */
+  .menu-content-main .menu-link a:hover::after,
+  .menu-content-main .menu-link .active-link:hover::after {
+    transform: scaleX(1);
+  }
+
+  /* force-hide all during reveal animation */
+.no-underline .menu-link a::after,
+.no-underline .menu-link .active-link::after {
+  transform: scaleX(0) !important;
+}
+}
+
+/* ------------------------------------------------------------------
+   MEDIA QUERIES
+------------------------------------------------------------------ */
+@layer components {
+  @media (max-width: 1000px) {
+    .menu-media-wrapper { display: none; }
+
+    .menu-content-main,
+    .menu-footer { width: 100%; }
+
+    .menu-content-main {
+      top: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 5rem;
+    }
+
+     .menu-link a,
+  .menu-link .active-link  { font-size: clamp(2rem, 8vw, 3rem); }
+    .menu-tag a { font-size: var(--fz-menu-tag); }
+  }
 }
