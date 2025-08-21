@@ -7,6 +7,7 @@ import gsap from 'gsap';
 import { CustomEase } from 'gsap/CustomEase';
 import { SplitText } from 'gsap/SplitText';
 import Image from 'next/image';
+import HoverSplitText from '@/components/HoverSplitText';
 
 export default function Nav({ containerRef }) {
   const pathname = usePathname();
@@ -28,6 +29,7 @@ export default function Nav({ containerRef }) {
     gsap.registerPlugin(CustomEase, SplitText);
     CustomEase.create('hop', '.87,0,.13,1');
     gsap.defaults({ overwrite: 'auto' });
+    document.body.classList.remove('menu-open', 'menu-closing');
 
     const root = navRef.current;
     const label = labelRef.current;
@@ -101,8 +103,7 @@ gsap.from(
         onComplete: () => { isOpen.current = true; },
         onReverseComplete: () => {
           isOpen.current = false;
-          // After reverse, we're closed. Don't touch text or underline here (your requirement).
-          hamburger.classList.remove('active');
+          document.body.classList.remove('menu-open', 'menu-closing'); // ← add this
           document.documentElement.style.overflow = '';
           document.body.style.overflow = '';
         }
@@ -115,14 +116,12 @@ gsap.from(
       tl.set(copyCols, { opacity: 1 });
 
       // OPEN (0s)
-      tl.to(label,          { y: '-110%', duration: 0.85, ease: 'hop' }, 0)
-        .to(containerEl,    { y: '100svh', duration: 0.85, ease: 'hop' }, 0)
+      tl.to(containerEl,    { y: '100svh', duration: 0.85, ease: 'hop' }, 0)
         .to(overlay,        { clipPath: 'polygon(0% 0%,100% 0%,100% 100%,0% 100%)', duration: 0.85, ease: 'hop' }, 0)
         .to(overlayContent, { yPercent: 0, duration: 0.85, ease: 'hop' }, 0)
         .to(media,          { opacity: 1, duration: 0.45, ease: 'power2.out' }, 0.05);
 
       // minor UI toggles managed by master
-      tl.call(() => hamburger.classList.add('active'), null, 0);
 
       tlRef.current = tl;
     }
@@ -193,7 +192,9 @@ gsap.from(
       gsap.set(overlayContent, { yPercent: -50 });
       gsap.set(media, { opacity: 0 });
 
-      hamburger.classList.remove('active');
+
+
+      document.body.classList.remove('menu-open', 'menu-closing'); // ← keep this
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
 
@@ -201,11 +202,25 @@ gsap.from(
       tlRef.current = null;
     }
 
-    function onToggle() {
-      if (!tlRef.current) buildMasterTl();
-      if (tlRef.current.reversed() || tlRef.current.progress() === 0) openMenu();
-      else closeMenu();
-    }
+function onToggle() {
+  if (!tlRef.current) buildMasterTl();
+
+
+  if (tlRef.current.reversed() || tlRef.current.progress() === 0) {
+    // OPEN
+    document.body.classList.add("menu-open");  // <-- instant white logo/hamburger
+    openMenu();
+  } else {
+    // CLOSE
+    document.body.classList.remove("menu-open");
+    document.body.classList.add("menu-closing"); // <-- instant revert to black
+
+    tlRef.current.timeScale(1.2).reverse().eventCallback("onReverseComplete", () => {
+      document.body.classList.remove("menu-closing");
+    });
+  }
+}
+
 
     const btn = root.querySelector('.menu-toggle-btn');
 
@@ -267,7 +282,7 @@ gsap.from(
       <div className="menu-overlay" ref={overlayRef}>
         <div className="menu-overlay-content" ref={overlayContentRef}>
           <div className="menu-media-wrapper" ref={mediaRef} style={{ position: 'relative' }}>
-            <Image src="/menu-media.jpg" alt="" fill priority sizes="100vw" placeholder="empty" />
+            <Image src="/test.png" alt="" fill priority sizes="100vw" placeholder="empty" />
           </div>
 
           <div className="menu-content-wrapper">

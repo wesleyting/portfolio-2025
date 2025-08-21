@@ -3,15 +3,14 @@
 ------------------------------------------------------------------ */
 :root {
   /* brand palette */
-  --color-bg: #EBEBEB;
-  --color-fg: #1A1A1A;
+  --color-bg: #FEFFF8;
+  --color-fg: #1E1E1E;
   --color-white: #FFFFFF;
 
   /* menu theme */
-  --menu-bg: #0f0f0f;
+  --menu-bg: #1E1E1E;
   --menu-fg: var(--color-white);
   --menu-fg-secondary: hsla(0, 0%, 100%, 0.6);
-  --hamburger-icon-border: rgba(255, 255, 255, 0.1);
 
   /* type scale */
   --fz-hero: clamp(2rem, 8vw, 12rem);
@@ -211,7 +210,25 @@
 
   .menu-logo {
     width: 64px;
+    cursor: pointer;
   }
+
+/* default: black logo (no filter) */
+.menu-logo img {
+  filter: none;
+  transition: filter 0.2s ease;
+}
+
+/* instantly white logo when opening */
+body.menu-open .menu-logo img {
+  filter: brightness(0) invert(1);
+}
+
+/* force back to black as soon as user clicks to close */
+body.menu-closing .menu-logo img {
+  filter: none;
+}
+
 
   .menu-toggle-btn {
     display: inline-flex;
@@ -219,6 +236,10 @@
     gap: var(--space-2);
     cursor: pointer;
   }
+
+
+
+  
   .menu-toggle-label {
     overflow: hidden;
   }
@@ -226,30 +247,69 @@
     position: relative;
     transform: translateY(0%);
     will-change: transform;
-  }
+    color: var(--color-fg);
+  transition: color 0.3s ease;
+}
 
-  .menu-hamburger-icon {
-    position: relative;
-    width: 3rem;
-    height: 3rem;
-    display: grid;
-    place-items: center;
-    border: 1px solid var(--hamburger-icon-border);
-    border-radius: 50%;
-  }
-  .menu-hamburger-icon span {
-    position: absolute;
-    width: 15px;
-    height: 1.25px;
-    background: var(--menu-fg);
-    transition: all 0.75s cubic-bezier(0.87, 0, 0.13, 1);
-    transform-origin: center;
-    will-change: transform;
-  }
-  .menu-hamburger-icon span:nth-child(1) { transform: translateY(-3px); }
-  .menu-hamburger-icon span:nth-child(2) { transform: translateY(3px); }
-  .menu-hamburger-icon.active span:nth-child(1) { transform: translateY(0) rotate(45deg) scaleX(1.05); }
-  .menu-hamburger-icon.active span:nth-child(2) { transform: translateY(0) rotate(-45deg) scaleX(1.05); }
+/* when hamburger is active, label turns white */
+body.menu-open  .menu-toggle-label p {
+  color: var(--color-white);
+}
+
+
+/* Base (closed) */
+.menu-hamburger-icon {
+  position: relative;
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-fg);   /* black circle when closed */
+  transition: background 0.2s ease;
+}
+
+
+.menu-hamburger-icon span {
+  position: absolute;
+  width: 15px;
+  height: 2px;
+  background: var(--color-white); /* white lines when closed */
+  transition: transform 0.35s cubic-bezier(0.87, 0, 0.13, 1), background 0.2s ease;
+  transform-origin: center;
+}
+
+.menu-hamburger-icon span:nth-child(1) { transform: translateY(-3px); }
+.menu-hamburger-icon span:nth-child(2) { transform: translateY(3px); }
+
+/* OPEN (instant swap on click) */
+body.menu-open .menu-hamburger-icon {
+  background: var(--color-white); /* white circle */
+}
+body.menu-open .menu-hamburger-icon span {
+  background: var(--color-fg);    /* black lines */
+}
+body.menu-open .menu-hamburger-icon span:nth-child(1) {
+  transform: translateY(0) rotate(45deg);
+}
+body.menu-open .menu-hamburger-icon span:nth-child(2) {
+  transform: translateY(0) rotate(-45deg);
+}
+
+/* CLOSING (instant revert on click-to-close) */
+body.menu-closing .menu-hamburger-icon {
+  background: var(--color-fg);    /* back to black */
+}
+body.menu-closing .menu-hamburger-icon span {
+  background: var(--color-white); /* back to white lines */
+}
+body.menu-closing .menu-hamburger-icon span:nth-child(1) {
+  transform: translateY(-3px);    /* back to hamburger */
+}
+body.menu-closing .menu-hamburger-icon span:nth-child(2) {
+  transform: translateY(3px);
+}
+
 
   .menu-overlay,
   .menu-overlay-content {
@@ -331,6 +391,7 @@
     font-weight: 500;
     line-height: 1.2;
     color: var(--menu-fg);
+    cursor: pointer;
   }
 
   .menu-link a::after,
@@ -390,4 +451,63 @@
   .menu-link .active-link  { font-size: clamp(2rem, 8vw, 3rem); }
     .menu-tag a { font-size: var(--fz-menu-tag); }
   }
+}
+
+
+/* EFFECT 041 — base look */
+.mwg_effect041 {
+  text-transform: uppercase;
+  color: #bab8b9;
+  min-height: 100vh;
+  background: #121212; /* optional if the page bg differs */
+  font: 500 normal 22px/1.3 'Inter', sans-serif;
+}
+
+.mwg_effect041 .header {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(185,185,185,0.3);
+  padding: 30px;
+}
+.mwg_effect041 .header > * { flex: 1; }
+.mwg_effect041 .header p { font-size: 14px; line-height: 1; }
+.mwg_effect041 .header .col1 { display: flex; align-items: center; gap: 12px; }
+.mwg_effect041 .header .col2 { text-align: center; }
+.mwg_effect041 .header .col3 { text-align: right; }
+
+.mwg_effect041 ul.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3vw 0 0;
+}
+
+.mwg_effect041 .item {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  width: max-content;
+  font: 500 normal 6.6vw/0.9 'Inter', sans-serif;
+  letter-spacing: -0.06em;
+}
+.mwg_effect041 .item.hovered span { pointer-events: none; }
+
+.mwg_effect041 .item span {
+  display: inline-block;
+  will-change: transform;
+}
+
+.mwg_effect041 .hidden {
+  pointer-events: none;
+  position: absolute;
+  bottom: 100%;
+}
+
+@media (max-width: 768px) {
+  .mwg_effect041 .header .col2,
+  .mwg_effect041 .header .col3 { display: none; }
+
+  .mwg_effect041 ul.content { padding: 30px 0 0; }
+
+  .mwg_effect041 .item { font-size: 36px; }
 }

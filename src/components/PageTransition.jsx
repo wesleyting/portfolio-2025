@@ -173,7 +173,7 @@ const PageTransition = ({ children }) => {
       .to(
         paths,
         {
-          fill: "#e3e4d8",
+          fill: "white",
           duration: DUR.fill,
           ease: "power2.out",
           stagger: LOGO_STAGGER,

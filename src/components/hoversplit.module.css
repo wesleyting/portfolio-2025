@@ -1,0 +1,40 @@
+.effect {
+  color: #bab8b9; /* override as needed */
+}
+
+.item {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  width: max-content;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-weight: 500;
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+}
+
+/* second line sits above, slides down during effect */
+.hidden {
+  pointer-events: none;
+  position: absolute;
+  bottom: 100%;
+}
+
+/* this exists so JS queries succeed */
+.visible {}
+
+/* each character */
+.item span {
+  display: inline-block;
+  will-change: transform;
+}
+
+/* while animating, avoid retriggers on inner spans */
+.hovered span { pointer-events: none; }
+
+/* mark only real letters */
+.letter {}
+
+@media (max-width: 768px) {
+  .item { font-size: 36px; }
+}
