@@ -1,0 +1,237 @@
+
+
+.links { display: flex; gap: 1em; }
+.nav a { color: #fff; font-size: 20px; font-weight: 500; text-decoration: none; }
+
+.section { width: 100%; height: 100svh; padding: 2.5em; }
+
+/* hero */
+.hero { display: flex; flex-direction: column; justify-content: space-between; padding-top: 4em; }
+.heroTitle {
+  position: relative; left: -0.05em;
+  text-transform: uppercase; font-weight: 500; font-size: 20vw;
+  letter-spacing: -0.04em; line-height: 1;
+}
+.heroCopy { display: flex; justify-content: space-between; align-items: flex-end; }
+
+/* outro */
+.outro { display: flex; justify-content: center; align-items: center; }
+
+/* intro + video */
+.intro { height: 100%; }
+
+
+.videoContainerDesktop {
+  position: relative;
+  transform: translateY(-105%) scale(0.25);
+  display: flex; flex-direction: column; gap: 2em;
+  will-change: transform;
+}
+
+.videoTitle p {
+  position: relative; font-size: 78px; font-weight: 500;
+}
+
+.videoContainerMobile {
+  display: none;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.videoPreview {
+  position: relative; width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 1.5rem; background-color: #b9b9b3; overflow: hidden;
+}
+.videoWrapper { position: absolute; inset: 0; border-radius: 1.5rem; overflow: hidden; }
+.videoWrapper video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;  /* behaves like background-size: cover */
+  border-radius: 1.5rem;
+  pointer-events: none; /* keeps it passive like the iframe */
+}
+
+
+@media (max-width: 900px) {
+  .nav, .section { padding: 1.5em; }
+  .hero { justify-content: flex-end; gap: 2em; }
+  .heroTitle { font-size: 19vw; }
+
+  .videoContainerDesktop { display: none; }
+  .videoContainerMobile { display: flex; flex-direction: column; gap: 1em; }
+}
+
+
+
+
+
+/* mobile hero is hidden by default */
+.mobileHero { display: none; }
+
+/* keep existing styles … */
+/* .section, .hero, .intro, .videoPreview, etc. already defined */
+
+/* ---------- Mobile layout rules ---------- */
+@media (max-width: 900px) {
+  /* Show the mobile hero at the very top */
+  .mobileHero {
+    display: block;
+    width: 100%;
+    height: auto; /* let content size naturally */
+ padding: 60px 1.5em 1.5em; /* 68px nav + 16px gap */
+  }
+
+  .mobileVideo {
+    position: relative;
+    z-index: 2; /* make sure it sits above any adjacent text */
+  }
+
+  /* We reuse your existing video styles */
+  .videoPreview { width: 100%; aspect-ratio: 16/9; border-radius: 1.5rem; background-color: #b9b9b3; overflow: hidden; }
+  .videoWrapper { position: absolute; inset: 0; border-radius: 1.5rem; overflow: hidden; }
+  .videoWrapper iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
+
+  .mobileRole {
+    margin-top: 0.9rem;
+    font-size: clamp(28px, 7vw, 44px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+
+  .mobileTagline {
+    margin-top: 0.25rem;
+    font-size: clamp(14px, 3.8vw, 18px);
+    opacity: 0.8;
+  }
+
+  /* Hide desktop hero on mobile */
+  .hero { display: none; }
+
+  /* If you want to completely rely on mobileHero for video on mobile,
+     hide the intro section on mobile, too: */
+  .intro { display: none; }
+
+  /* If you keep .intro visible for other content, at least kill the desktop container there */
+  .videoContainerDesktop { display: none !important; }
+
+  /* Your existing rule keeps this visible if you still want a second video block in the intro */
+  .videoContainerMobile { display: flex; flex-direction: column; gap: 1em; }
+}
+
+
+/* existing base */
+.section { width: 100%; height: 100svh; padding: 2.5em; }
+
+/* ===== Desktop hero text layout ===== */
+.hero {
+  position: relative;
+  display: flex;
+  align-items: center;          /* center vertically */
+  padding-top: 4em;             /* keep room for nav */
+}
+
+/* big two-line headline */
+/* Headline positioned near the bottom, full width */
+.headline {
+  position: absolute;
+  bottom: 6.5rem; /* distance above the bottom labels; tweak to taste */
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 0.05em;
+  width: 100%;
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  font-size: clamp(48px, 10vw, 120px);
+  margin: 0;
+}
+
+.lineLeft  { text-align: left;  display: block; }
+.lineRight { text-align: right; display: block; }
+
+/* line alignments */
+.lineLeft  { text-align: left;  display: block; }
+.lineRight { text-align: right; display: block; }
+
+/* Bottom corner labels (left/right) */
+.cornerLeft,
+.cornerRight {
+  position: absolute;
+  bottom: 2.5em;  /* same as section bottom padding */
+  font-weight: 500;
+  font-size: clamp(12px, 1.1vw, 16px);
+  letter-spacing: 0.02em;
+}
+
+
+/* ===== Outro ===== */
+.outro { display: flex; justify-content: center; align-items: center; }
+
+/* ===== Intro + video (unchanged from you) ===== */
+.intro { height: 100%; }
+
+.videoContainerDesktop {
+  position: relative;
+  transform: translateY(-105%) scale(0.25);
+  display: flex; flex-direction: column; gap: 2em;
+  will-change: transform;
+}
+
+.videoTitle p {
+  position: relative; font-size: 78px; font-weight: 500;
+}
+
+.videoContainerMobile {
+  display: none;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.videoPreview {
+  position: relative; width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 1.5rem; background-color: #b9b9b3; overflow: hidden;
+}
+.videoWrapper { position: absolute; inset: 0; border-radius: 1.5rem; overflow: hidden; }
+.videoWrapper video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; border-radius: 1.5rem; pointer-events: none;
+}
+
+/* base typography */
+
+/* ===== Mobile rules ===== */
+@media (max-width: 900px) {
+  .section { padding: 1.5em; }
+  .hero { display: none; }         /* use the mobile hero instead */
+
+  .videoContainerDesktop { display: none; }
+  .videoContainerMobile { display: flex; flex-direction: column; gap: 1em; }
+
+  .mobileHero {
+    display: block;
+    width: 100%;
+    height: auto;
+    padding: 60px 1.5em 1.5em;     /*  nav + spacing */
+  }
+  .mobileVideo { position: relative; z-index: 2; }
+  .mobileRole {
+    margin-top: 0.9rem;
+    font-size: clamp(28px, 7vw, 44px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+  .mobileTagline {
+    margin-top: 0.25rem;
+    font-size: clamp(14px, 3.8vw, 18px);
+    opacity: 0.8;
+  }
+}

@@ -1,10 +1,9 @@
 'use client';
 
 import { useRef } from 'react';
-import Copy from '@/components/Copy';
 import Nav from '@/components/Nav'; // or Menu, whatever you named it
-import Link from 'next/link';
-import HoverSplitText from '@/components/HoverSplitText';
+import Hero from '@/components/Hero';
+
 
 export default function Page() {
   const containerRef = useRef(null);
@@ -13,15 +12,14 @@ export default function Page() {
     <>
       <Nav containerRef={containerRef} />
       <div className="container" ref={containerRef}>
-        <div className="page-header">
-          <Copy delay={0.3}>
-            <h1>WEB DEVELOPER</h1>
-            <Link href="/about">test</Link>
-<HoverSplitText text="Sound Track Record" size="72px" />
-          </Copy>
+       
+      <Hero />
 
-        </div>
+      {/* space below so you can scroll the expansion */}
+      <div style={{ height: '200vh' }} />
+        
       </div>
+      
     </>
   );
 }

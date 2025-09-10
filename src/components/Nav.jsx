@@ -1,13 +1,16 @@
 'use client';
-
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import gsap from 'gsap';
 import { CustomEase } from 'gsap/CustomEase';
 import { SplitText } from 'gsap/SplitText';
 import Image from 'next/image';
-import HoverSplitText from '@/components/HoverSplitText';
+
+// Register once
+gsap.registerPlugin(CustomEase, SplitText);
+CustomEase.create('hop', '.87,0,.13,1');
+gsap.defaults({ overwrite: 'auto' });
 
 export default function Nav({ containerRef }) {
   const pathname = usePathname();
@@ -22,39 +25,42 @@ export default function Nav({ containerRef }) {
   // timelines
   const tlRef = useRef(null);      // master (reversible)
   const linesTlRef = useRef(null); // open-only SplitText reveal
-
   const isOpen = useRef(false);
 
+  /* ------------------------------------------------------------------
+     INTRO ANIMATION (runs once on initial mount, not on transitions)
+     ------------------------------------------------------------------ */
+  useLayoutEffect(() => {
+    const root = navRef.current;
+    if (!root) return;
+
+    const bar  = root.querySelector('.menu-bar');
+    const bits = root.querySelectorAll('.menu-logo, .menu-toggle-btn');
+
+    // Set initial state synchronously (before paint)
+    gsap.set(bar,  { y: -40, autoAlpha: 0 });
+    gsap.set(bits, { y: -20, autoAlpha: 0 });
+
+    // Animate in (still before first paint completes)
+    const tlIntro = gsap.timeline({ defaults: { clearProps: 'all' } });
+    tlIntro
+      .addLabel('intro', 0.3) // match your 0.3s delay
+      .to(bar,  { y: 0, autoAlpha: 1, duration: 0.8, ease: 'power4.out' }, 'intro')
+      .to(bits, { y: 0, autoAlpha: 1, duration: 0.6, ease: 'power3.out', stagger: 0.08 }, 'intro+=0.1');
+
+    return () => tlIntro.kill();
+  }, []); // ← runs once (no pathname)
+
+  /* ------------------------------------------------------------------
+     MAIN EFFECT (your original logic; fires on route change as needed)
+     ------------------------------------------------------------------ */
   useEffect(() => {
-    gsap.registerPlugin(CustomEase, SplitText);
-    CustomEase.create('hop', '.87,0,.13,1');
-    gsap.defaults({ overwrite: 'auto' });
     document.body.classList.remove('menu-open', 'menu-closing');
 
     const root = navRef.current;
     const label = labelRef.current;
 
-    gsap.from(root.querySelector(".menu-bar"), {
-  y: -40,
-  opacity: 0,
-  duration: 0.8,
-  ease: "power4.out",
-  delay: 0.3, // match your Copy delay
-  clearProps: "all",
-});
-
-gsap.from(
-  root.querySelectorAll(".menu-logo, .menu-toggle-btn"),
-  {
-    y: -20,
-    opacity: 0,
-    duration: 0.6,
-    ease: "power3.out",
-    stagger: 0.08,
-    delay: 0.4, // slightly after the bar itself
-    clearProps: "all",
-  }
-);
+    // (❗️Intro tweens were here before; removed so they don't replay on transitions)
 
     const hamburger = hamburgerRef.current;
     const overlay = overlayRef.current;
@@ -103,7 +109,7 @@ gsap.from(
         onComplete: () => { isOpen.current = true; },
         onReverseComplete: () => {
           isOpen.current = false;
-          document.body.classList.remove('menu-open', 'menu-closing'); // ← add this
+          document.body.classList.remove('menu-open', 'menu-closing');
           document.documentElement.style.overflow = '';
           document.body.style.overflow = '';
         }
@@ -121,22 +127,20 @@ gsap.from(
         .to(overlayContent, { yPercent: 0, duration: 0.85, ease: 'hop' }, 0)
         .to(media,          { opacity: 1, duration: 0.45, ease: 'power2.out' }, 0.05);
 
-      // minor UI toggles managed by master
-
       tlRef.current = tl;
     }
 
-    // Open-only: line reveal (we will start this on open each time)
+    // Open-only: line reveal
     const playLineReveal = () => {
       linesTlRef.current?.kill();
       const lines = splitSets.flatMap(set => set.flatMap(s => s.lines));
       if (!lines?.length) return;
       linesTlRef.current = gsap.to(lines, {
         y: '0%',
-        duration: 1.5,       // snappy
+        duration: 1.5,
         ease: 'hop',
-        stagger: -0.055,      // tighter cascade
-        delay: 0           // just after motion starts
+        stagger: -0.055,
+        delay: 0
       });
     };
 
@@ -145,23 +149,18 @@ gsap.from(
       document.body.style.overflow = 'hidden';
     }
 
-    // OPEN: reset lines + gate underline, then play master + reveal lines, then allow underline
     function openMenu() {
       lockScroll();
 
-      // hide underline while intro starts, and reset SplitText lines for a fresh reveal
       root.classList.add('no-underline');
       resetLinesInstant();
 
       if (!tlRef.current) buildMasterTl();
 
-      // restart master from the beginning for consistent timing
       tlRef.current.time(0).timeScale(1).play();
 
-      // kick the lines reveal
       playLineReveal();
 
-      // let underline appear shortly AFTER the lines start moving
       gsap.delayedCall(1.3, () => {
         root.classList.remove('no-underline');
       });
@@ -176,14 +175,19 @@ gsap.from(
       }
     }
 
-    // CLOSE: just shove up (reverse master). Don’t touch lines/underline/media explicitly.
     function closeMenu() {
       if (!tlRef.current) return;
-      tlRef.current.timeScale(1.2).reverse(); // slightly faster close
+      const prevCb = tlRef.current.eventCallback('onReverseComplete');
+      document.body.classList.add('menu-closing');
+      tlRef.current.timeScale(1.2).reverse();
+      tlRef.current.eventCallback('onReverseComplete', () => {
+        document.body.classList.remove('menu-closing');
+        if (prevCb) prevCb();
+      });
     }
 
     function instantClose() {
-      // hard-close for route changes (keep this behavior)
+      // hard-close for route changes
       linesTlRef.current?.kill();
 
       const containerEl = containerRef?.current || document.querySelector('.container');
@@ -192,9 +196,7 @@ gsap.from(
       gsap.set(overlayContent, { yPercent: -50 });
       gsap.set(media, { opacity: 0 });
 
-
-
-      document.body.classList.remove('menu-open', 'menu-closing'); // ← keep this
+      document.body.classList.remove('menu-open', 'menu-closing');
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
 
@@ -202,28 +204,28 @@ gsap.from(
       tlRef.current = null;
     }
 
-function onToggle() {
-  if (!tlRef.current) buildMasterTl();
+    function onToggle() {
+      if (!tlRef.current) buildMasterTl();
 
+      if (tlRef.current.reversed() || tlRef.current.progress() === 0) {
+        // OPEN
+        document.body.classList.add('menu-open');
+        openMenu();
+      } else {
+        // CLOSE
+        document.body.classList.remove('menu-open');
+        document.body.classList.add('menu-closing');
 
-  if (tlRef.current.reversed() || tlRef.current.progress() === 0) {
-    // OPEN
-    document.body.classList.add("menu-open");  // <-- instant white logo/hamburger
-    openMenu();
-  } else {
-    // CLOSE
-    document.body.classList.remove("menu-open");
-    document.body.classList.add("menu-closing"); // <-- instant revert to black
-
-    tlRef.current.timeScale(1.2).reverse().eventCallback("onReverseComplete", () => {
-      document.body.classList.remove("menu-closing");
-    });
-  }
-}
-
+        const prevCb = tlRef.current.eventCallback('onReverseComplete');
+        tlRef.current.timeScale(1.2).reverse();
+        tlRef.current.eventCallback('onReverseComplete', () => {
+          document.body.classList.remove('menu-closing');
+          if (prevCb) prevCb();
+        });
+      }
+    }
 
     const btn = root.querySelector('.menu-toggle-btn');
-
 
     let cancelled = false;
     (async () => {
@@ -274,7 +276,7 @@ function onToggle() {
         </div>
 
         <div className="menu-toggle-btn" data-no-transition="true">
-          <div className="menu-toggle-label"><p ref={labelRef}>Menu</p></div>
+          <div className="menu-toggle-label"><p ref={labelRef}>MENU</p></div>
           <div className="menu-hamburger-icon" ref={hamburgerRef}><span /><span /></div>
         </div>
       </div>
