@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useLayoutEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -8,11 +8,32 @@ import styles from './Hero.module.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
+/**
+ * 🔧 SIMPLE KNOBS (edit these)
+ *
+ * Each entry applies when window.innerWidth <= max.
+ * If none match, the last object (Infinity) is used.
+ *
+ * startY:       starting vertical offset in %, more negative = higher
+ * scaleStart:   starting scale (0.0–1.0)
+ * movement:     mouse drift strength while small
+ * maxVideoPx:   intrinsic desktop video max width (px)
+ */
+const BREAKPOINTS = [
+  { max: 1000, startY: -135, scaleStart: 0.33, movement: 450, maxVideoPx: 900  },
+  { max: 1100, startY: -130, scaleStart: 0.30, movement: 500, maxVideoPx: 1000 },
+  { max: 1200, startY: -125, scaleStart: 0.28, movement: 550, maxVideoPx: 1100 },
+  { max: 1300, startY: -120, scaleStart: 0.26, movement: 600, maxVideoPx: 1150 },
+{ max: Infinity, startY: -105, scaleStart: 0.25, movement: 650, maxVideoPx: 1600 },
+];
+
+/** Desktop threshold (px) */
+const DESKTOP_MIN = 900;
+
 export default function VideoDriftScroller() {
   const rootRef = useRef(null);
   const introRef = useRef(null);
   const videoContainerRef = useRef(null);
-  const videoTitleRef = useRef(null); // wrapper for the two <p> nodes
 
   // RAF + Lenis/GSAP sync
   const rafRef = useRef(null);
@@ -23,13 +44,19 @@ export default function VideoDriftScroller() {
     const root = rootRef.current;
     const intro = introRef.current;
     const videoContainer = videoContainerRef.current;
-    const videoTitleEl = videoTitleRef.current;
-    if (!root || !intro || !videoContainer || !videoTitleEl) return;
+    if (!root || !intro || !videoContainer) return;
 
-    const isDesktop = () => window.innerWidth >= 900;
-    const titlePs = Array.from(videoTitleEl.querySelectorAll('p'));
+    const isDesktop = () => window.innerWidth >= DESKTOP_MIN;
 
-    // ---- Lenis ----
+    const getCfg = () => {
+      const w = window.innerWidth;
+      for (const bp of BREAKPOINTS) {
+        if (w <= bp.max) return bp;
+      }
+      return BREAKPOINTS[BREAKPOINTS.length - 1];
+    };
+
+    // ---- Lenis (desktop only) ----
     if (isDesktop()) {
       const lenis = new Lenis();
       lenisRef.current = lenis;
@@ -45,51 +72,39 @@ export default function VideoDriftScroller() {
       gsap.ticker.lagSmoothing(0);
     }
 
-    // ---- Breakpoints ----
-    const breakpoints = [
-      { maxWidth: 1000, translateY: -135, movMultiplier: 450 },
-      { maxWidth: 1100, translateY: -130, movMultiplier: 500 },
-      { maxWidth: 1200, translateY: -125, movMultiplier: 550 },
-      { maxWidth: 1300, translateY: -120, movMultiplier: 600 },
-    ];
+    // ---- State ----
+    const cfg = getCfg();
 
-    const getInitialValues = () => {
-      const width = window.innerWidth;
-      for (const bp of breakpoints) {
-        if (width <= bp.maxWidth) {
-          return { translateY: bp.translateY, movementMultiplier: bp.movMultiplier };
-        }
-      }
-      return { translateY: -105, movementMultiplier: 650 };
-    };
-
-    const initial = getInitialValues();
+    // expose max video width to CSS via a variable
+    root.style.setProperty('--video-max', `${cfg.maxVideoPx}px`);
 
     const state = {
       scrollProgress: 0,
-      initialTranslateY: initial.translateY,
-      currentTranslateY: initial.translateY,
-      movementMultiplier: initial.movementMultiplier,
-      scale: 0.25,
-      fontSize: 80,
-      gap: 2,
+      initialTranslateY: cfg.startY,
+      currentTranslateY: cfg.startY,
+      movementMultiplier: cfg.movement,
+      scale: cfg.scaleStart,
       targetMouseX: 0,
       currentMouseX: 0,
     };
 
-    // initial transforms
+    // initial transform
     videoContainer.style.transform =
       `translateY(${state.currentTranslateY}%) translateX(0px) scale(${state.scale})`;
-    videoContainer.style.gap = `${state.gap}em`;
-    titlePs.forEach((p) => (p.style.fontSize = `${state.fontSize}px`));
 
-    // resize
+    // ---- Resize ----
     const onResize = () => {
-      const nv = getInitialValues();
-      state.initialTranslateY = nv.translateY;
-      state.movementMultiplier = nv.movementMultiplier;
+      const next = getCfg();
+
+      // update css var for width clamp
+      root.style.setProperty('--video-max', `${next.maxVideoPx}px`);
+
+      state.movementMultiplier = next.movement;
+      state.initialTranslateY = next.startY;
+
       if (state.scrollProgress === 0) {
-        state.currentTranslateY = nv.translateY;
+        state.currentTranslateY = next.startY;
+        state.scale = next.scaleStart;
         videoContainer.style.transform =
           `translateY(${state.currentTranslateY}%) translateX(0px) scale(${state.scale})`;
       }
@@ -97,7 +112,7 @@ export default function VideoDriftScroller() {
     };
     window.addEventListener('resize', onResize);
 
-    // scrolltrigger
+    // ---- ScrollTrigger (desktop only) ----
     let st;
     if (isDesktop()) {
       st = gsap.timeline({
@@ -108,38 +123,28 @@ export default function VideoDriftScroller() {
           scrub: true,
           onUpdate: (self) => {
             state.scrollProgress = self.progress;
-
+            // vertical position: startY -> 0
             state.currentTranslateY = gsap.utils.interpolate(
               state.initialTranslateY, 0, state.scrollProgress
             );
-            state.scale = gsap.utils.interpolate(0.25, 1, state.scrollProgress);
-            state.gap = gsap.utils.interpolate(2, 1, state.scrollProgress);
-
-            if (state.scrollProgress <= 0.4) {
-              const p = state.scrollProgress / 0.4;
-              state.fontSize = gsap.utils.interpolate(80, 40, p);
-            } else {
-              const p = (state.scrollProgress - 0.4) / 0.6;
-              state.fontSize = gsap.utils.interpolate(40, 20, p);
-            }
+            // scale: scaleStart -> 1
+            state.scale = gsap.utils.interpolate(cfg.scaleStart, 1, state.scrollProgress);
           },
         },
       });
     }
 
-    // mouse move
+    // ---- Mouse move (desktop only) ----
     const onMouse = (e) => {
       if (!isDesktop()) return;
       state.targetMouseX = (e.clientX / window.innerWidth - 0.5) * 2; // -1..1
     };
     document.addEventListener('mousemove', onMouse);
 
-    // RAF loop
+    // ---- RAF loop ----
     const animate = () => {
       if (isDesktop()) {
-        const {
-          scale, targetMouseX, currentMouseX, currentTranslateY, fontSize, gap, movementMultiplier,
-        } = state;
+        const { scale, targetMouseX, currentMouseX, currentTranslateY, movementMultiplier } = state;
 
         const scaledMovementMultiplier = (1 - scale) * movementMultiplier;
         const maxX = scale < 0.95 ? targetMouseX * scaledMovementMultiplier : 0;
@@ -148,20 +153,16 @@ export default function VideoDriftScroller() {
 
         videoContainer.style.transform =
           `translateY(${currentTranslateY}%) translateX(${state.currentMouseX}px) scale(${scale})`;
-
-        videoContainer.style.gap = `${gap}em`;
-        titlePs.forEach((p) => (p.style.fontSize = `${fontSize}px`));
       } else {
+        // clear transforms on mobile to let CSS layout handle it
         videoContainer.style.transform = '';
-        videoContainer.style.gap = '';
-        titlePs.forEach((p) => (p.style.fontSize = ''));
       }
 
       rafRef.current = requestAnimationFrame(animate);
     };
     rafRef.current = requestAnimationFrame(animate);
 
-    // cleanup
+    // ---- Cleanup ----
     return () => {
       document.removeEventListener('mousemove', onMouse);
       window.removeEventListener('resize', onResize);
@@ -176,37 +177,44 @@ export default function VideoDriftScroller() {
   return (
     <div ref={rootRef} className={styles.root}>
       {/* MOBILE-ONLY HERO (video first, then text) */}
-      <section className={`${styles.section} ${styles.mobileHero}`}>
-        <div className={styles.mobileVideo}>
-          <div className={styles.videoPreview}>
-            <div className={styles.videoWrapper}>
-              <video
-                src="/video.mp4"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-                className={styles.video}
-              />
-            </div>
-          </div>
-        </div>
-        <h1 className={styles.mobileRole}>WEB DEVELOPER</h1>
-        <p className={styles.mobileTagline}>Crafting experiences online</p>
-      </section>
+<section className={`${styles.section} ${styles.mobileHero}`}>
+  <div className={styles.mobileVideo}>
+    <div className={styles.videoPreview}>
+      <div className={styles.videoWrapper}>
+        <video
+          src="/video.mp4"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          className={styles.video}
+        />
+      </div>
+    </div>
+  </div>
 
-{/* DESKTOP HERO — headline near bottom */}
-<section className={`${styles.section} ${styles.hero}`}>
-  <h1 className={styles.headline}>
-    <span className={styles.lineLeft}>BUILD DIGITAL SOLUTIONS</span>
-    <span className={styles.lineRight}>WITH REAL RESULTS.</span>
+
+
+  {/* hero title anchored at bottom */}
+  <h1 className={styles.mobileRole}>
+    <span>CREATIVE</span>
+    <span>DEVELOPER</span>
   </h1>
-
-  <div className={styles.cornerLeft}>WESLEY TING</div>
-  <div className={styles.cornerRight}>WEB DEVELOPER</div>
 </section>
 
+
+
+      {/* DESKTOP HERO — headline near bottom */}
+      <section className={`${styles.section} ${styles.hero}`}>
+        <h1 className={styles.headline}>
+          <span className={styles.lineLeft}>Creative</span>
+          <span className={styles.lineRight}>Developer</span>
+        </h1>
+
+        <div className={styles.cornerLeft}>WESLEY TING</div>
+        <div className={styles.cornerRight}>WEB DEVELOPER</div>
+      </section>
 
       {/* INTRO with the animated video (desktop) */}
       <section ref={introRef} className={`${styles.section} ${styles.intro}`}>
@@ -224,36 +232,8 @@ export default function VideoDriftScroller() {
               />
             </div>
           </div>
-          <div ref={videoTitleRef} className={styles.videoTitle}>
-            <p>PRO Showreel</p>
-            <p>2023 - 2024</p>
-          </div>
         </div>
 
-        {/* Optional secondary mobile block */}
-        <div className={styles.videoContainerMobile}>
-          <div className={styles.videoPreview}>
-            <div className={styles.videoWrapper}>
-              <video
-                src="/video.mp4"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-                className={styles.video}
-              />
-            </div>
-          </div>
-          <div className={styles.videoTitle}>
-            <p>PRO Showreel</p>
-            <p>2023 - 2024</p>
-          </div>
-        </div>
-      </section>
-
-      <section className={`${styles.section} ${styles.outro}`}>
-        <p>Delve into coding without clutter.</p>
       </section>
     </div>
   );

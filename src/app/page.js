@@ -11,12 +11,11 @@ export default function Page() {
   return (
     <>
       <Nav containerRef={containerRef} />
-      <div className="container" ref={containerRef}>
+      <div  ref={containerRef}>
        
       <Hero />
 
-      {/* space below so you can scroll the expansion */}
-      <div style={{ height: '200vh' }} />
+
         
       </div>
       

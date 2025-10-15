@@ -6,6 +6,7 @@ import gsap from 'gsap';
 import { CustomEase } from 'gsap/CustomEase';
 import { SplitText } from 'gsap/SplitText';
 import Image from 'next/image';
+import TextRolloverScoped from "@/components/TextRolloverScoped";
 
 // Register once
 gsap.registerPlugin(CustomEase, SplitText);
@@ -38,15 +39,14 @@ export default function Nav({ containerRef }) {
     const bits = root.querySelectorAll('.menu-logo, .menu-toggle-btn');
 
     // Set initial state synchronously (before paint)
-    gsap.set(bar,  { y: -40, autoAlpha: 0 });
-    gsap.set(bits, { y: -20, autoAlpha: 0 });
+  gsap.set(bar,  { y: -40, opacity: 0 });   gsap.set(bits, { y: -20, opacity: 0 });
 
     // Animate in (still before first paint completes)
     const tlIntro = gsap.timeline({ defaults: { clearProps: 'all' } });
     tlIntro
       .addLabel('intro', 0.3) // match your 0.3s delay
-      .to(bar,  { y: 0, autoAlpha: 1, duration: 0.8, ease: 'power4.out' }, 'intro')
-      .to(bits, { y: 0, autoAlpha: 1, duration: 0.6, ease: 'power3.out', stagger: 0.08 }, 'intro+=0.1');
+    .to(bar,  { y: 0, opacity: 1, duration: 0.8, ease: 'power4.out' }, 'intro')
+     .to(bits, { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out', stagger: 0.08 }, 'intro+=0.1');
 
     return () => tlIntro.kill();
   }, []); // ← runs once (no pathname)
@@ -275,10 +275,19 @@ export default function Nav({ containerRef }) {
           </ActiveOrLink>
         </div>
 
-        <div className="menu-toggle-btn" data-no-transition="true">
-          <div className="menu-toggle-label"><p ref={labelRef}>MENU</p></div>
-          <div className="menu-hamburger-icon" ref={hamburgerRef}><span /><span /></div>
-        </div>
+<div className="menu-toggle-btn group" data-no-transition="true">
+  <div className="menu-toggle-label">
+    {/* keep the <p> so your existing CSS still applies */}
+    <p ref={labelRef}>
+      <TextRolloverScoped text="MENU" className="font-semibold text-[inherit]" duration={260} />
+    </p>
+  </div>
+
+  <div className="menu-hamburger-icon" ref={hamburgerRef}>
+    <span />
+    <span />
+  </div>
+</div>
       </div>
 
       <div className="menu-overlay" ref={overlayRef}>

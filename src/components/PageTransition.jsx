@@ -1,3 +1,4 @@
+// components/PageTransition.jsx
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
@@ -5,7 +6,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { gsap } from "gsap";
 import Logo from "./Logo";
 
-// central timing controls
 const DUR = {
   cover: 0.4,
   reveal: 0.4,
@@ -14,61 +14,57 @@ const DUR = {
   blockStagger: 0.03,
 };
 
-// optional slight staggering for logo paths
-const LOGO_STAGGER = 0.0; // set to 0.06 for a gentle cascade
+const LOGO_STAGGER = 0.0;
 
 export default function PageTransition({ children }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const overlayRef = useRef(null);      // holds the 12 blocks
-  const logoOverlayRef = useRef(null);  // dark screen with logo
-  const logoRef = useRef(null);         // <Logo/> svg root
-  const blocksRef = useRef([]);         // the 12 block divs
+  const overlayRef = useRef(null);
+  const logoOverlayRef = useRef(null);
+  const logoContainerRef = useRef(null);
+  const logoRef = useRef(null);
+  const blocksRef = useRef([]);
   const isTransitioning = useRef(false);
-
-  const pathLengthsRef = useRef([]);    // stroke lengths for all paths
+  const pathLengthsRef = useRef([]);
   const revealTimeoutRef = useRef(null);
 
-  /* -----------------------------
-   * Helpers
-   * ----------------------------*/
+  // ----- helpers -----
+  const ensureMeasured = useCallback(() => {
+    const svg = logoRef.current;
+    if (!svg) return null;
+    const paths = svg.querySelectorAll("path");
+    if (!paths.length) return paths;
 
-  const onAnchorClick = useCallback(
-    (e) => {
-      if (isTransitioning.current) {
-        e.preventDefault();
-        return;
-      }
-      // allow new tabs/middle-click/etc.
-      if (
-        e.metaKey ||
-        e.ctrlKey ||
-        e.shiftKey ||
-        e.altKey ||
-        e.button !== 0 ||
-        e.currentTarget.target === "_blank"
-      ) {
-        return;
-      }
-      const href = e.currentTarget.href;
-      if (!href) return;
-      const url = new URL(href);
-      if (url.origin !== window.location.origin) return; // external
+    if (pathLengthsRef.current.length !== paths.length || pathLengthsRef.current.length === 0) {
+      pathLengthsRef.current = Array.from(paths).map((p) => p.getTotalLength());
+    }
+    return paths;
+  }, []);
 
-      e.preventDefault();
-      const nextPath = url.pathname;
-      if (nextPath !== pathname) {
-        handleRouteChange(nextPath);
-      }
-    },
-    [pathname]
-  );
+  const resetLogoForDraw = useCallback(() => {
+    const paths = ensureMeasured();
+    if (!paths || !paths.length) return paths;
+
+    gsap.killTweensOf(paths);
+    paths.forEach((p, i) => {
+      gsap.set(p, {
+        strokeDasharray: pathLengthsRef.current[i],
+        strokeDashoffset: pathLengthsRef.current[i],
+        fill: "transparent",
+      });
+    });
+
+    // force reflow so draw always starts from hidden
+    paths[0]?.getBoundingClientRect();
+    return paths;
+  }, [ensureMeasured]);
 
   const revealPage = useCallback(() => {
     if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
 
-    // ensure blocks are present and fully covered (scaleX:1 from right) before revealing
+    // reveal the black blocks
+    gsap.killTweensOf(blocksRef.current);
     gsap.set(blocksRef.current, { scaleX: 1, transformOrigin: "right" });
 
     gsap.to(blocksRef.current, {
@@ -77,14 +73,22 @@ export default function PageTransition({ children }) {
       stagger: DUR.blockStagger,
       ease: "power3.out",
       transformOrigin: "right",
+      onStart: () => {
+        // mark the app as visible (if a flash happened earlier, this guarantees it now)
+        document.body.classList.remove("show-splash");
+        document.body.classList.add("app-ready");
+      },
       onComplete: () => {
         isTransitioning.current = false;
-        if (overlayRef.current) overlayRef.current.style.pointerEvents = "none";
-        if (logoOverlayRef.current) logoOverlayRef.current.style.pointerEvents = "none";
+        overlayRef.current && (overlayRef.current.style.pointerEvents = "none");
+        if (logoOverlayRef.current) {
+          logoOverlayRef.current.style.pointerEvents = "none";
+          logoOverlayRef.current.style.opacity = 0;
+        }
       },
     });
 
-    // safety in case a block sticks
+    // safety fallback
     revealTimeoutRef.current = setTimeout(() => {
       const firstBlock = blocksRef.current[0];
       if (firstBlock && gsap.getProperty(firstBlock, "scaleX") > 0) {
@@ -95,8 +99,13 @@ export default function PageTransition({ children }) {
           transformOrigin: "right",
           onComplete: () => {
             isTransitioning.current = false;
-            if (overlayRef.current) overlayRef.current.style.pointerEvents = "none";
-            if (logoOverlayRef.current) logoOverlayRef.current.style.pointerEvents = "none";
+            overlayRef.current && (overlayRef.current.style.pointerEvents = "none");
+            if (logoOverlayRef.current) {
+              logoOverlayRef.current.style.pointerEvents = "none";
+              logoOverlayRef.current.style.opacity = 0;
+            }
+            document.body.classList.remove("show-splash");
+            document.body.classList.add("app-ready");
           },
         });
       }
@@ -104,62 +113,68 @@ export default function PageTransition({ children }) {
   }, []);
 
   const playInitialIntro = useCallback(() => {
-    if (!logoOverlayRef.current || !logoRef.current) {
-      // if logo overlay is missing for any reason, just reveal
+    // splash must be interactive and visible
+    overlayRef.current && (overlayRef.current.style.pointerEvents = "auto");
+    logoOverlayRef.current && (logoOverlayRef.current.style.pointerEvents = "auto");
+
+    const paths = resetLogoForDraw();
+    if (!logoOverlayRef.current || !logoRef.current || !paths?.length) {
+      // if anything is missing, just reveal immediately
       revealPage();
       return;
     }
 
-    // enable overlay interaction during intro (prevent clicks)
-    logoOverlayRef.current.style.pointerEvents = "auto";
-     if (overlayRef.current) overlayRef.current.style.pointerEvents = "auto";
-
-    const paths = logoRef.current.querySelectorAll("path");
-
-    // reset stroke/filled state before drawing
-    paths.forEach((p, i) => {
-      gsap.set(p, {
-        strokeDasharray: pathLengthsRef.current[i],
-        strokeDashoffset: pathLengthsRef.current[i],
-        fill: "transparent",
-      });
-    });
+    const start = "fonts" in document ? document.fonts.ready : Promise.resolve();
 
     const tl = gsap.timeline({
       defaults: { ease: "power2.out" },
       onComplete: () => {
-        // disable overlay interaction again
-        if (logoOverlayRef.current) logoOverlayRef.current.style.pointerEvents = "none";
-        // after logo intro, peel blocks to reveal content
+        // after logo draw, proceed to reveal blocks and app
+        logoOverlayRef.current && (logoOverlayRef.current.style.pointerEvents = "none");
         revealPage();
       },
     });
 
-  tl.set(logoOverlayRef.current, { opacity: 1 })                // show dark screen
-    .to(paths, {                                                // draw
-      strokeDashoffset: 0,
-      duration: DUR.draw,
-      ease: "power2.inOut",
-      stagger: LOGO_STAGGER,
-    }, 0)
-    .to(paths, { fill: "white", duration: DUR.fill, stagger: LOGO_STAGGER }, "-=0.4")
-    // *** PRE-COVER with blocks while logo is still visible ***
-    .set(blocksRef.current, { scaleX: 1, transformOrigin: "right" }, "-=0.05")
-    // now fade the logo away; blocks are already covering, so no flash
-    .to(logoOverlayRef.current, { opacity: 0, duration: 0.2 });
-}, [revealPage]);
+    start.then(() => {
+      // ensure splash is visible at the moment we start animating
+      document.body.classList.add("show-splash");
+      gsap.set(logoOverlayRef.current, { opacity: 1 });
+      gsap.set(logoContainerRef.current, { opacity: 1 }); // use the ref
+
+      tl.to(
+        paths,
+        {
+          strokeDashoffset: 0,
+          duration: DUR.draw,
+          ease: "power2.inOut",
+          stagger: LOGO_STAGGER,
+        },
+        0
+      )
+        .to(paths, { fill: "white", duration: DUR.fill, stagger: LOGO_STAGGER }, "-=0.4")
+        .set(blocksRef.current, { scaleX: 1, transformOrigin: "right" }, "-=0.05")
+   .to(logoOverlayRef.current, { opacity: 0, duration: 0.2, onComplete: () => {
+       gsap.set(logoContainerRef.current, { opacity: 0 }); // hide again when overlay fades
+     }});
+    });
+  }, [revealPage, resetLogoForDraw]);
 
   const coverPage = useCallback(
     (url) => {
-      if (overlayRef.current) overlayRef.current.style.pointerEvents = "auto";
-      if (logoOverlayRef.current) logoOverlayRef.current.style.pointerEvents = "auto";
+         document.body.classList.add("show-splash");
+   document.body.classList.remove("app-ready");
+      overlayRef.current && (overlayRef.current.style.pointerEvents = "auto");
+      logoOverlayRef.current && (logoOverlayRef.current.style.pointerEvents = "auto");
 
-      // mark next page mount as internal nav → skip intro once
       try {
         window.sessionStorage.setItem("skipIntroOnce", "1");
       } catch {}
 
-      const paths = logoRef.current?.querySelectorAll("path") ?? [];
+      // fresh state every time we cover
+      gsap.killTweensOf(blocksRef.current);
+      gsap.set(blocksRef.current, { scaleX: 0, transformOrigin: "left" });
+
+      const paths = resetLogoForDraw();
 
       const tl = gsap.timeline({
         onComplete: () => router.push(url),
@@ -173,16 +188,9 @@ export default function PageTransition({ children }) {
         transformOrigin: "left",
       })
         .set(logoOverlayRef.current, { opacity: 1 }, "-=0.15")
-        .set(
-          paths,
-          (i) => ({
-            strokeDashoffset: pathLengthsRef.current[i],
-            fill: "transparent",
-          }),
-          "-=0.2"
-        )
+        .set(logoContainerRef.current, { opacity: 1 }, "<")
         .to(
-          paths,
+          paths ?? [],
           {
             strokeDashoffset: 0,
             duration: DUR.draw,
@@ -192,13 +200,17 @@ export default function PageTransition({ children }) {
           "-=0.4"
         )
         .to(
-          paths,
+          paths ?? [],
           { fill: "white", duration: DUR.fill, ease: "power2.out", stagger: LOGO_STAGGER },
           "-=0.5"
         )
-        .to(logoOverlayRef.current, { opacity: 0, duration: 0.2, ease: "power2.out" });
+   .to(logoOverlayRef.current, { opacity: 0, duration: 0.2, ease: "power2.out",
+     onComplete: () => {
+      gsap.set(logoContainerRef.current, { opacity: 0 }); // hide after cover draw ends
+     }
+   });
     },
-    [router]
+    [router, resetLogoForDraw]
   );
 
   const handleRouteChange = useCallback(
@@ -210,29 +222,23 @@ export default function PageTransition({ children }) {
     [coverPage]
   );
 
-  /* -----------------------------
-   * Mount / Update
-   * ----------------------------*/
+  // ----- mount/update -----
   useEffect(() => {
-    // (1) build 12 blocks in the overlay
-    const createBlocks = () => {
-      if (!overlayRef.current) return;
+    // create 12 blocks (scoped class name inside .transition-overlay)
+    if (overlayRef.current) {
       overlayRef.current.innerHTML = "";
       blocksRef.current = [];
       for (let i = 0; i < 12; i++) {
         const block = document.createElement("div");
-        block.className = "block";
+        block.className = "transition-block"; // NOTE: renamed from 'block' to avoid global collisions
         overlayRef.current.appendChild(block);
         blocksRef.current.push(block);
       }
-    };
+    }
 
-    createBlocks();
-
-    // initial state: blocks hidden from left
     gsap.set(blocksRef.current, { scaleX: 0, transformOrigin: "left" });
 
-    // (2) measure logo path lengths (needed for both intro and cover)
+    // measure logo path lengths (initial)
     if (logoRef.current) {
       const paths = logoRef.current.querySelectorAll("path");
       pathLengthsRef.current = Array.from(paths).map((p) => p.getTotalLength());
@@ -245,29 +251,43 @@ export default function PageTransition({ children }) {
       });
     }
 
-    // (3) Decide intro vs reveal-on-mount
-    const navEntry =
-      typeof performance !== "undefined"
-        ? performance.getEntriesByType("navigation")[0]
-        : undefined;
-    const isBackForward = navEntry?.type === "back_forward";
-
+    // decide intro vs skip
     const skipIntroOnce =
-      typeof window !== "undefined" &&
-      window.sessionStorage.getItem("skipIntroOnce") === "1";
+      typeof window !== "undefined" && window.sessionStorage.getItem("skipIntroOnce") === "1";
 
-    if (skipIntroOnce || isBackForward) {
-      // clear one-shot flag so later direct loads still play intro
-      try {
-        window.sessionStorage.removeItem("skipIntroOnce");
-      } catch {}
+    if (skipIntroOnce) {
+      try { window.sessionStorage.removeItem("skipIntroOnce"); } catch {}
+      // we still ensure the splash class is removed if skipping
+      document.body.classList.remove("show-splash");
+      document.body.classList.add("app-ready");
       revealPage();
     } else {
-      // direct land or full reload → play intro every time
+      // ensure splash is active before running the intro
+      document.body.classList.add("show-splash");
       playInitialIntro();
     }
 
-    // (4) intercept internal links
+    // intercept internal links
+    const onAnchorClick = (e) => {
+      if (isTransitioning.current) {
+        e.preventDefault();
+        return;
+      }
+      if (
+        e.metaKey || e.ctrlKey || e.shiftKey || e.altKey ||
+        e.button !== 0 || e.currentTarget.target === "_blank"
+      ) {
+        return;
+      }
+      const href = e.currentTarget.href;
+      if (!href) return;
+      const url = new URL(href);
+      if (url.origin !== window.location.origin) return;
+      e.preventDefault();
+      const nextPath = url.pathname;
+      if (nextPath !== pathname) handleRouteChange(nextPath);
+    };
+
     const links = document.querySelectorAll('a[href^="/"]');
     links.forEach((link) => link.addEventListener("click", onAnchorClick));
 
@@ -275,20 +295,24 @@ export default function PageTransition({ children }) {
       links.forEach((link) => link.removeEventListener("click", onAnchorClick));
       if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
     };
-  }, [pathname, onAnchorClick, revealPage, playInitialIntro]);
+  }, [pathname, revealPage, playInitialIntro, handleRouteChange]);
 
   return (
     <>
-      {/* overlay with 12 blocks (built via JS) */}
+      {/* cover/reveal bars */}
       <div ref={overlayRef} className="transition-overlay" />
-      {/* dark screen with logo */}
+
+      {/* logo overlay (visible by default via CSS while body has .show-splash) */}
       <div ref={logoOverlayRef} className="logo-overlay">
-        <div className="logo-container">
+        <div ref={logoContainerRef} className="logo-container">
           <Logo ref={logoRef} />
         </div>
       </div>
 
-      {children}
+      {/* your app content, hidden until we remove .show-splash */}
+      <div className="app-shell">
+        {children}
+      </div>
     </>
   );
 }

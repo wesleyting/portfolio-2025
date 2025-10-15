@@ -1,20 +1,18 @@
+// app/layout.js
 import "./globals.css";
-import Nav from "@/components/Nav";
 import PageTransition from "@/components/PageTransition";
 
 export const metadata = {
-  title: "NextJS x GSAP Page Transitions | Codegrid",
-  description: "NextJS x GSAP Page Transitions | Codegrid",
+  title: "Wesley Ting",
+  description: "Wesley Ting Portfolio",
 };
 
 export default function RootLayout({ children }) {
-  
   return (
     <html lang="en">
-      <body>
+      {/* IMPORTANT: start with 'show-splash' on body so splash is visible on first paint */}
+      <body className="show-splash">
         <PageTransition>
-           
-
           {children}
         </PageTransition>
       </body>

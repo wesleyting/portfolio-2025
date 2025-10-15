@@ -1,145 +1,23 @@
-
-
-.links { display: flex; gap: 1em; }
-.nav a { color: #fff; font-size: 20px; font-weight: 500; text-decoration: none; }
-
-.section { width: 100%; height: 100svh; padding: 2.5em; }
-
-/* hero */
-.hero { display: flex; flex-direction: column; justify-content: space-between; padding-top: 4em; }
-.heroTitle {
-  position: relative; left: -0.05em;
-  text-transform: uppercase; font-weight: 500; font-size: 20vw;
-  letter-spacing: -0.04em; line-height: 1;
-}
-.heroCopy { display: flex; justify-content: space-between; align-items: flex-end; }
-
-/* outro */
-.outro { display: flex; justify-content: center; align-items: center; }
-
-/* intro + video */
-.intro { height: 100%; }
-
-
-.videoContainerDesktop {
-  position: relative;
-  transform: translateY(-105%) scale(0.25);
-  display: flex; flex-direction: column; gap: 2em;
-  will-change: transform;
+/* Root wrapper */
+.root {
+  /* CSS var the JS sets per breakpoint (fallback default) */
+  --video-max: 1200px;
 }
 
-.videoTitle p {
-  position: relative; font-size: 78px; font-weight: 500;
-}
-
-.videoContainerMobile {
-  display: none;
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.videoPreview {
-  position: relative; width: 100%;
-  aspect-ratio: 16/9;
-  border-radius: 1.5rem; background-color: #b9b9b3; overflow: hidden;
-}
-.videoWrapper { position: absolute; inset: 0; border-radius: 1.5rem; overflow: hidden; }
-.videoWrapper video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;  /* behaves like background-size: cover */
-  border-radius: 1.5rem;
-  pointer-events: none; /* keeps it passive like the iframe */
-}
-
-
-@media (max-width: 900px) {
-  .nav, .section { padding: 1.5em; }
-  .hero { justify-content: flex-end; gap: 2em; }
-  .heroTitle { font-size: 19vw; }
-
-  .videoContainerDesktop { display: none; }
-  .videoContainerMobile { display: flex; flex-direction: column; gap: 1em; }
-}
-
-
-
-
-
-/* mobile hero is hidden by default */
-.mobileHero { display: none; }
-
-/* keep existing styles … */
-/* .section, .hero, .intro, .videoPreview, etc. already defined */
-
-/* ---------- Mobile layout rules ---------- */
-@media (max-width: 900px) {
-  /* Show the mobile hero at the very top */
-  .mobileHero {
-    display: block;
-    width: 100%;
-    height: auto; /* let content size naturally */
- padding: 60px 1.5em 1.5em; /* 68px nav + 16px gap */
-  }
-
-  .mobileVideo {
-    position: relative;
-    z-index: 2; /* make sure it sits above any adjacent text */
-  }
-
-  /* We reuse your existing video styles */
-  .videoPreview { width: 100%; aspect-ratio: 16/9; border-radius: 1.5rem; background-color: #b9b9b3; overflow: hidden; }
-  .videoWrapper { position: absolute; inset: 0; border-radius: 1.5rem; overflow: hidden; }
-  .videoWrapper iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
-
-  .mobileRole {
-    margin-top: 0.9rem;
-    font-size: clamp(28px, 7vw, 44px);
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1.05;
-  }
-
-  .mobileTagline {
-    margin-top: 0.25rem;
-    font-size: clamp(14px, 3.8vw, 18px);
-    opacity: 0.8;
-  }
-
-  /* Hide desktop hero on mobile */
-  .hero { display: none; }
-
-  /* If you want to completely rely on mobileHero for video on mobile,
-     hide the intro section on mobile, too: */
-  .intro { display: none; }
-
-  /* If you keep .intro visible for other content, at least kill the desktop container there */
-  .videoContainerDesktop { display: none !important; }
-
-  /* Your existing rule keeps this visible if you still want a second video block in the intro */
-  .videoContainerMobile { display: flex; flex-direction: column; gap: 1em; }
-}
-
-
-/* existing base */
+/* Generic sections */
 .section { width: 100%; height: 100svh; padding: 2.5em; }
 
 /* ===== Desktop hero text layout ===== */
 .hero {
   position: relative;
   display: flex;
-  align-items: center;          /* center vertically */
-  padding-top: 4em;             /* keep room for nav */
+  align-items: center;
+  padding-top: 4em; /* room for nav */
 }
 
-/* big two-line headline */
-/* Headline positioned near the bottom, full width */
 .headline {
   position: absolute;
-  bottom: 6.5rem; /* distance above the bottom labels; tweak to taste */
+  bottom: 6.5rem; /* distance above bottom labels */
   display: grid;
   grid-template-rows: auto auto;
   gap: 0.05em;
@@ -148,90 +26,130 @@
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 0.9;
-  font-size: clamp(48px, 10vw, 120px);
+  font-size: clamp(48px, 11vw, 200px);
   margin: 0;
+  /* if you use a page wrapper with padding-inline, match it here: */
+  padding-inline: clamp(1rem, 4vw, 2rem);
 }
 
 .lineLeft  { text-align: left;  display: block; }
 .lineRight { text-align: right; display: block; }
 
-/* line alignments */
-.lineLeft  { text-align: left;  display: block; }
-.lineRight { text-align: right; display: block; }
-
-/* Bottom corner labels (left/right) */
 .cornerLeft,
 .cornerRight {
   position: absolute;
-  bottom: 2.5em;  /* same as section bottom padding */
+  bottom: 2.5em; /* same as section padding */
   font-weight: 500;
   font-size: clamp(12px, 1.1vw, 16px);
   letter-spacing: 0.02em;
 }
 
+.cornerLeft  { left: 2.5em; }
+.cornerRight { right: 2.5em; }
 
 /* ===== Outro ===== */
 .outro { display: flex; justify-content: center; align-items: center; }
 
-/* ===== Intro + video (unchanged from you) ===== */
+/* ===== Intro + video ===== */
 .intro { height: 100%; }
 
+/* This container is transformed by JS (translateY/scale/translateX) */
 .videoContainerDesktop {
   position: relative;
+  /* Fallback starting transform; JS will override */
   transform: translateY(-105%) scale(0.25);
-  display: flex; flex-direction: column; gap: 2em;
+  display: flex;
+  flex-direction: column;
+  gap: 2em;
   will-change: transform;
 }
 
-.videoTitle p {
-  position: relative; font-size: 78px; font-weight: 500;
-}
-
-.videoContainerMobile {
-  display: none;
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
+/* The "box" that defines intrinsic video size (JS applies scale on the parent) */
 .videoPreview {
-  position: relative; width: 100%;
+  position: relative;
+  width: min(var(--video-max, 1200px), 90vw); /* clamp by CSS var + viewport */
   aspect-ratio: 16/9;
-  border-radius: 1.5rem; background-color: #b9b9b3; overflow: hidden;
+  border-radius: 1.5rem;
+  background-color: #b9b9b3;
+  overflow: hidden;
+  margin-inline: auto;
 }
+
 .videoWrapper { position: absolute; inset: 0; border-radius: 1.5rem; overflow: hidden; }
 .videoWrapper video {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; border-radius: 1.5rem; pointer-events: none;
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 1.5rem;
+  pointer-events: none;
 }
 
-/* base typography */
+/* ===== Mobile hero (shown on small screens) ===== */
+.mobileHero { display: none; }
 
-/* ===== Mobile rules ===== */
 @media (max-width: 900px) {
-  .section { padding: 1.5em; }
-  .hero { display: none; }         /* use the mobile hero instead */
+  .section { padding: 0; }
+
+  /* Hide desktop hero in favor of mobile hero */
+  .hero { display: none; }
+
+ .mobileHero {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    height: 100svh;               /* full screen height */
+    padding: 120px 1.5em 0;   /* you already set this for nav space */
+  }
+
+  .mobileVideo {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* tagline sits just below video */
+  .mobileTagline {
+    margin-top: 0.75rem;
+    font-size: clamp(15px, 4vw, 18px);
+    line-height: 1.4;
+    opacity: 0.85;
+    max-width: 28ch;
+  }
+
+  /* position the title at bottom */
+  .mobileRole {
+    position: absolute;
+    bottom: 3.5rem;
+    left: 0;
+    width: 100%;
+    text-align: center;
+
+    font-size: clamp(2.2rem, 13vw, 5rem);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    padding-inline: 0.5rem;
+  }
+
+    .mobileRole span { display: block; }
 
   .videoContainerDesktop { display: none; }
-  .videoContainerMobile { display: flex; flex-direction: column; gap: 1em; }
 
-  .mobileHero {
-    display: block;
+  /* Secondary mobile block inside intro (kept) */
+  .videoContainerMobile {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
     width: 100%;
-    height: auto;
-    padding: 60px 1.5em 1.5em;     /*  nav + spacing */
+    max-width: 800px;
+    margin: 0 auto;
   }
-  .mobileVideo { position: relative; z-index: 2; }
-  .mobileRole {
-    margin-top: 0.9rem;
-    font-size: clamp(28px, 7vw, 44px);
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1.05;
-  }
-  .mobileTagline {
-    margin-top: 0.25rem;
-    font-size: clamp(14px, 3.8vw, 18px);
-    opacity: 0.8;
+
+  /* Mobile video box sizing — simpler clamp */
+  .videoContainerMobile .videoPreview {
+    width: 94vw;
   }
 }

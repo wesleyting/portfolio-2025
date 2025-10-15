@@ -1,10 +1,14 @@
+/* app/globals.css */
+@import "tailwindcss";
+
+
 /* ------------------------------------------------------------------
    TOKENS
 ------------------------------------------------------------------ */
 
 :root {
   /* brand palette */
-  --color-bg: #FEFFF8;
+  --color-bg: #F5F5F5;
   --color-fg: #1E1E1E;
   --color-white: #FFFFFF;
 
@@ -27,7 +31,13 @@
 
   /* effects */
   --underline-thickness: 6px;
+
+  --container-max: 1200px;
+  --container-gutter: clamp(1rem, 4vw, 2rem);
 }
+
+
+
 
 /* optional: automatic dark menu theme hook if you ever need it
 @media (prefers-color-scheme: dark) {
@@ -87,22 +97,81 @@
   }
 }
 
+
+/* --- Splash state classes on <body> --- */
+.show-splash .logo-overlay { opacity: 1; pointer-events: auto; }
+.show-splash .app-shell    { opacity: 0; }
+
+.app-ready .logo-overlay   { display: none; }
+.app-ready .app-shell      { opacity: 1; }
+
+/* --- Layers --- */
+/* Black splash screen */
+/* Black splash screen */
+.logo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  display: grid;
+  place-items: center;
+  opacity: 1;          /* fully opaque black at start */
+  pointer-events: none;
+}
+
+/* Hide the logo initially (so you don't see the static outline) */
+.logo-container {
+  opacity: 0;
+  will-change: opacity, transform;
+}
+
+
+
+/* App fades in when splash completes */
+.app-shell {
+  min-height: 100svh;
+  transition: opacity 250ms ease;
+}
+
+/* --- Transition overlay bars (cover/reveal) --- */
+.transition-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  pointer-events: none;
+  z-index: 9990;
+}
+
+/* IMPORTANT: use a unique class, not ".block" to avoid Tailwind collisions */
+.transition-overlay .transition-block {
+  background: #000; /* or your brand dark */
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+/* (optional) if you had a global .block before, REMOVE or scope it:
+   .transition-overlay .block { ... } */
+
+
 /* ------------------------------------------------------------------
    LAYOUT
 ------------------------------------------------------------------ */
 @layer components {
   /* top nav bar that sits above everything */
-  nav {
-    position: absolute;
-    inset: 0 auto auto 0;
-    width: 100vw;
-    padding: var(--space-3);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 10; /* sits below overlays that use 1000+ */
-    pointer-events: none; /* menu bar handles interactions */
-  }
+
+nav {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100vw;
+  padding-inline: var(--container-gutter); /* align with wrapper */
+  padding-block: var(--space-3);
+  display: flex;
+  justify-content: space-between; /* center the inner wrap */
+  align-items: center;
+  z-index: 10;
+  pointer-events: none;
+}
 
   .nav-logo a {
     pointer-events: auto;
@@ -125,26 +194,15 @@
     background: var(--color-bg);
   }
 
-  .page-header {
-    width: 100vw;
+.page-header {
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-    display: flex;
-    justify-content: center;
-    align-items: center;
 
-  }
 
-  .archive {
-    width: min(30%, 640px);
-    margin: 0 auto;
-    padding: 15rem var(--space-3);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-  }
-  .archive img {
-    aspect-ratio: 5 / 7;
-  }
 
   /* page transition overlay blocks */
   .transition-overlay {
@@ -156,12 +214,7 @@
     pointer-events: none;
     z-index: 1000;
   }
-  .block {
-    flex: 1;
-    background: #222; /* can be tokenized if you want */
-    transform: scaleX(0);
-    transform-origin: left;
-  }
+
 
   /* splash logo overlay */
   .logo-overlay {
@@ -189,6 +242,21 @@
     display: inline-block;
     will-change: transform;
   }
+
+.wrap{
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--container-gutter);
+  box-sizing: border-box;
+}
+
+
+/* optional vertical padding helpers if you want rhythm */
+.pad-y-1 { padding-block: var(--space-2); }
+.pad-y-2 { padding-block: var(--space-3); }
+.pad-y-3 { padding-block: var(--space-4); }
+
 }
 
 /* ------------------------------------------------------------------
@@ -196,19 +264,20 @@
 ------------------------------------------------------------------ */
 @layer components {
   /* clickable bar that remains interactive */
-  .menu-bar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    padding: var(--space-3);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    pointer-events: all;
-    color: var(--menu-fg-secondary);
-    z-index: 100; /* above nav but below overlays */
-  }
+.menu-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  padding-inline: var(--container-gutter); /* align with wrapper */
+  padding-block: var(--space-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: all;
+  color: var(--menu-fg-secondary);
+  z-index: 100;
+}
 
   .menu-logo {
     width: 64px;
